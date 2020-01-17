@@ -75,7 +75,7 @@ end
 #               x = AddUpdateEntry('x', 9, $a)
 ### Changes the input Expr in-place.
 ### Does not track nested assignments.
-function TrackAssignmentExpr(expr, inputsValues, lastline=-1)::Int64
+function TrackAssignmentExpr(expr, inputsValues, lastline=-1, verbose=false)::Int64
     
     # If this expr is a LineNumberNode we update which line we are currently on and move on
     if(typeof(expr) == LineNumberNode)
@@ -85,7 +85,9 @@ function TrackAssignmentExpr(expr, inputsValues, lastline=-1)::Int64
     # Else, if it is an expression we walk the expression array looking for assigments to track
     elseif(typeof(expr) == Expr) 
         if(expr.head == :(=))
-            println("Tracking assignments to $(expr.args[1]) on line $(lastline)")
+            if(verbose)
+                println("Tracking assignments to $(expr.args[1]) on line $(lastline)")
+            end
             key = "[$(lastline)]: $(expr.args[1]) = $(expr.args[2])"
             replacementExpr = Expr(:call, AddUpdateEntry, key, lastline, expr.args[2], inputsValues...)
             expr.args[2]    = replacementExpr
@@ -96,7 +98,7 @@ function TrackAssignmentExpr(expr, inputsValues, lastline=-1)::Int64
                      # with our tracking function.
 
                      # Recurse down the tree.
-                     lastline = TrackAssignmentExpr(expr.args[i], inputsValues, lastline)
+                     lastline = TrackAssignmentExpr(expr.args[i], inputsValues, lastline, verbose)
                  elseif(typeof(expr.args[i]) == LineNumberNode)
                      lastline = expr.args[i].line
                  end
